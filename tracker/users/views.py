@@ -1,5 +1,6 @@
+import json
 from django.shortcuts import render
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, authentication
 from .models import User
 from .serializers import UserSerializer
 from django.http import JsonResponse
@@ -7,6 +8,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.authtoken.models import Token
+from django.contrib.auth.hashers import check_password
 
 
 # Create your views here.
@@ -36,4 +39,24 @@ class RegisterView(APIView):
         user = serializer.save()
         user.set_password(request.data.get('password'))
         user.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        token = Token.objects.create(user=user)
+        return Response(json.dumps({"data": serializer.data, "token": token.key}), status=status.HTTP_201_CREATED)
+
+
+class LoginView(APIView):
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        name = data['name']
+        password = data['password']
+        user = User.objects.filter(name=name)
+        if user:
+            password_match = check_password(password, user[0].password)
+        if password_match:
+            try:
+                token = Token.objects.get(user_id=user[0].id)
+            except Token.DoesNotExist:
+                token = Token.objects.create(user=user[0])
+            return JsonResponse({'token': token.key}, status=200)
+
+        else:
+            return JsonResponse({'error': 'error_message'}, status=400)

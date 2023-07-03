@@ -23,16 +23,10 @@ from django.urls import path, include
 from users.views import RegisterView
 
 
-router = routers.DefaultRouter()
-router.register(r'users', userViews.UserViewSet, basename='User')
-router.register(r'groups', views.GroupViewSet)
 
 urlpatterns = [
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
-    path('', include(router.urls)),
     path('admin/', admin.site.urls),
     path('', include('habit_tracker.urls')),
     path('register/', RegisterView.as_view(), name='register'),
-
-
+    path('auth/',include('users.urls'))
 ]
